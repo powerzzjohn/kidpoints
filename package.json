@@ -1,0 +1,41 @@
+{
+  "name": "children-points-system",
+  "version": "1.0.0",
+  "description": "A gamified family points management system for children",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "cd server && npm start",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "cd client && npm test",
+    "test:server": "cd server && npm test",
+    "db:migrate": "cd server && npx prisma migrate deploy",
+    "db:migrate:dev": "cd server && npx prisma migrate dev",
+    "db:seed": "cd server && npx prisma db seed",
+    "db:studio": "cd server && npx prisma studio",
+    "db:generate": "cd server && npx prisma generate",
+    "vercel-build": "npm run db:generate && npm run build",
+    "postinstall": "npm run db:generate"
+  },
+  "keywords": [
+    "children",
+    "points",
+    "gamification",
+    "family",
+    "react",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.13.6"
+  }
+}

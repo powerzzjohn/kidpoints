@@ -1,0 +1,222 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String   @default("CHILD") // "PARENT" or "CHILD"
+  familyId  String
+  avatar    String?
+  theme     String   @default("PVZ") // "PVZ" or "MINECRAFT"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  family               Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  pointsRecords        PointsRecord[]
+  redemptions          RedemptionRecord[]
+  userBadges           UserBadge[]
+  createdRules         BehaviorRule[]     @relation("RuleCreator")
+  confirmedRules       RuleConfirmation[]
+  createdRecords       PointsRecord[]     @relation("RecordCreator")
+  processedRedemptions RedemptionRecord[] @relation("RedemptionProcessor")
+
+  // Message Relations
+  sentMessages     Message[] @relation("MessageSender")
+  receivedMessages Message[] @relation("MessageReceiver")
+
+  // Parent-Child Relations
+  parentRelations ParentChildRelation[] @relation("ParentRelations")
+  childRelations  ParentChildRelation[] @relation("ChildRelations")
+
+  @@map("users")
+}
+
+model Family {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  photo       String?
+  customTexts String? // JSON string for custom texts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  behaviorRules BehaviorRule[]
+  shopItems     ShopItem[]
+  badges        Badge[]
+  messages      Message[]
+
+  @@map("families")
+}
+
+model BehaviorRule {
+  id            String   @id @default(cuid())
+  familyId      String
+  name          String
+  description   String
+  points        Int
+  category      String // "STUDY", "CHORES", "EXERCISE", "BEHAVIOR"
+  isActive      Boolean  @default(false)
+  effectiveDate DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+
+  // Relations
+  family        Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy     User               @relation("RuleCreator", fields: [createdById], references: [id])
+  confirmations RuleConfirmation[]
+  pointsRecords PointsRecord[]
+
+  @@map("behavior_rules")
+}
+
+model RuleConfirmation {
+  id     String @id @default(cuid())
+  ruleId String
+  userId String
+
+  // Relations
+  rule BehaviorRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, userId])
+  @@map("rule_confirmations")
+}
+
+model PointsRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int
+  type        String // "EARN", "SPEND", "BONUS"
+  reason      String
+  ruleId      String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rule      BehaviorRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  createdBy User          @relation("RecordCreator", fields: [createdById], references: [id])
+
+  @@map("points_records")
+}
+
+model ShopItem {
+  id          String   @id @default(cuid())
+  familyId    String
+  name        String
+  description String
+  points      Int
+  type        String // "PHYSICAL" or "VIRTUAL"
+  category    String
+  image       String?
+  isActive    Boolean  @default(true)
+  stock       Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  family      Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  redemptions RedemptionRecord[]
+
+  @@map("shop_items")
+}
+
+model RedemptionRecord {
+  id          String    @id @default(cuid())
+  userId      String
+  itemId      String
+  points      Int
+  status      String    @default("PENDING") // "PENDING", "APPROVED", "REJECTED", "COMPLETED"
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+  processedBy String?
+  notes       String?
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  processor User?    @relation("RedemptionProcessor", fields: [processedBy], references: [id])
+
+  @@map("redemption_records")
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  category    String // "INDEPENDENCE", "STUDY", "EXERCISE", "CUSTOM"
+  condition   String // JSON string: { ruleId: string, count: number, period: 'week' | 'month' }
+  familyId    String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  family     Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  progress Int      @default(0)
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model ParentChildRelation {
+  id        String   @id @default(cuid())
+  parentId  String
+  childId   String
+  relation  String   @default("parent") // "father", "mother", "guardian", "parent"
+  isPrimary Boolean  @default(false) // 是否为主要监护人
+  createdAt DateTime @default(now())
+
+  // Relations
+  parent User @relation("ParentRelations", fields: [parentId], references: [id], onDelete: Cascade)
+  child  User @relation("ChildRelations", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+  @@map("parent_child_relations")
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String?
+  familyId   String
+  content    String
+  type       String    @default("text") // "text", "notification", "system"
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User?  @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
