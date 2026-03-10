@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
-    "build": "npm run build:client && npm run build:server",
+    "build": "cd client && npm install && npm run build",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
     "start": "cd server && npm start",
@@ -19,8 +19,7 @@
     "db:seed": "cd server && npx prisma db seed",
     "db:studio": "cd server && npx prisma studio",
     "db:generate": "cd server && npx prisma generate",
-    "vercel-build": "npm run db:generate && npm run build",
-    "postinstall": "npm run db:generate"
+    "install:all": "cd server && npm install && cd ../client && npm install"
   },
   "keywords": [
     "children",
