@@ -1,0 +1,4 @@
+# Vercel ignore file
+server/
+test_*.js
+*.log
