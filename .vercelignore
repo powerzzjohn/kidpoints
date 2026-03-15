@@ -1,4 +1,6 @@
-# Vercel ignore file
-server/
+# Vercel ignore file - only ignore unnecessary files
+server/dist/
+server/uploads/
+server/prisma/dev.db
 test_*.js
 *.log
