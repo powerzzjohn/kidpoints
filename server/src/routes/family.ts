@@ -609,29 +609,16 @@ router.put('/custom-texts/:key', authenticate, async (req: AuthRequest, res): Pr
   }
 });
 
-export default router;
-
 // 获取家庭积分排行榜
 router.get('/leaderboard', authenticate, async (req: AuthRequest, res): Promise<void> => {
   try {
-    const { period = 'all' } = req.query; // all, week, month
-    
-    // 获取家庭所有儿童
+    const { period = 'all' } = req.query;
+
     const children = await prisma.user.findMany({
-      where: {
-        familyId: req.user!.familyId,
-        role: 'CHILD'
-      },
-      select: {
-        id: true,
-        username: true,
-        avatar: true,
-        theme: true,
-        createdAt: true
-      }
+      where: { familyId: req.user!.familyId, role: 'CHILD' },
+      select: { id: true, username: true, avatar: true, theme: true, createdAt: true }
     });
 
-    // 计算时间范围
     let startDate: Date | undefined;
     if (period === 'week') {
       startDate = new Date();
@@ -641,87 +628,36 @@ router.get('/leaderboard', authenticate, async (req: AuthRequest, res): Promise<
       startDate.setMonth(startDate.getMonth() - 1);
     }
 
-    // 获取每个儿童的积分信息
     const leaderboard = await Promise.all(
       children.map(async (child) => {
-        // 获取积分记录
         const pointsRecords = await prisma.pointsRecord.findMany({
-          where: {
-            userId: child.id,
-            ...(startDate && { createdAt: { gte: startDate } })
-          }
+          where: { userId: child.id, ...(startDate && { createdAt: { gte: startDate } }) }
         });
 
-        // 计算总积分
-        const totalPoints = pointsRecords.reduce((sum, record) => sum + record.amount, 0);
-        
-        // 计算获得的积分（正数）
-        const earnedPoints = pointsRecords
-          .filter(r => r.amount > 0)
-          .reduce((sum, record) => sum + record.amount, 0);
-        
-        // 计算消费的积分（负数）
-        const spentPoints = Math.abs(
-          pointsRecords
-            .filter(r => r.amount < 0)
-            .reduce((sum, record) => sum + record.amount, 0)
-        );
-
-        // 获取勋章数量
-        const badgeCount = await prisma.userBadge.count({
-          where: { userId: child.id }
-        });
-
-        // 获取完成的规则数量
+        const totalPoints = pointsRecords.reduce((sum, r) => sum + r.amount, 0);
+        const earnedPoints = pointsRecords.filter(r => r.amount > 0).reduce((sum, r) => sum + r.amount, 0);
+        const spentPoints = Math.abs(pointsRecords.filter(r => r.amount < 0).reduce((sum, r) => sum + r.amount, 0));
+        const badgeCount = await prisma.userBadge.count({ where: { userId: child.id } });
         const completedRules = await prisma.pointsRecord.count({
-          where: {
-            userId: child.id,
-            type: 'EARN',
-            ...(startDate && { createdAt: { gte: startDate } })
-          }
+          where: { userId: child.id, type: 'EARN', ...(startDate && { createdAt: { gte: startDate } }) }
         });
-
-        // 获取兑换次数
         const redemptionCount = await prisma.redemptionRecord.count({
-          where: {
-            userId: child.id,
-            status: { in: ['APPROVED', 'COMPLETED'] },
-            ...(startDate && { createdAt: { gte: startDate } })
-          }
+          where: { userId: child.id, status: { in: ['APPROVED', 'COMPLETED'] }, ...(startDate && { createdAt: { gte: startDate } }) }
         });
 
-        return {
-          userId: child.id,
-          username: child.username,
-          avatar: child.avatar,
-          theme: child.theme,
-          totalPoints,
-          earnedPoints,
-          spentPoints,
-          badgeCount,
-          completedRules,
-          redemptionCount,
-          joinedAt: child.createdAt
-        };
+        return { userId: child.id, username: child.username, avatar: child.avatar, theme: child.theme,
+          totalPoints, earnedPoints, spentPoints, badgeCount, completedRules, redemptionCount, joinedAt: child.createdAt };
       })
     );
 
-    // 按总积分排序
     leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
+    const rankedLeaderboard = leaderboard.map((entry, index) => ({ ...entry, rank: index + 1 }));
 
-    // 添加排名
-    const rankedLeaderboard = leaderboard.map((entry, index) => ({
-      ...entry,
-      rank: index + 1
-    }));
-
-    res.json({
-      period,
-      leaderboard: rankedLeaderboard,
-      totalChildren: children.length
-    });
+    res.json({ period, leaderboard: rankedLeaderboard, totalChildren: children.length });
   } catch (error) {
     console.error('获取排行榜错误:', error);
     res.status(500).json({ error: 'INTERNAL_ERROR', message: '服务器内部错误' });
   }
 });
+
+export default router;

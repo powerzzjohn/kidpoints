@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Frontend React app for Children Points System",
   "private": true,
+  "type": "module",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

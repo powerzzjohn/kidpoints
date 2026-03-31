@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// 生产环境用相对路径（同域），开发环境用 localhost:3001
+const API_URL = import.meta.env.PROD
+  ? ''
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3001');
 
 export const api = axios.create({
   baseURL: API_URL,

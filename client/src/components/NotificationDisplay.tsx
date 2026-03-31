@@ -316,10 +316,12 @@ export default function NotificationDisplay({
 
   return (
     <div className={`fixed ${positionStyles[position]} z-50 flex flex-col space-y-2 max-w-sm`}>
-      {/* 连接状态指示器 */}
-      <div className={`px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-        {isConnected ? '🟢 实时连接' : '🔴 连接断开'}
-      </div>
+      {/* 连接状态指示器 - 仅开发环境显示 */}
+      {!import.meta.env.PROD && (
+        <div className={`px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {isConnected ? '🟢 实时连接' : '🔴 连接断开'}
+        </div>
+      )}
 
       {/* 通知列表 */}
       {notifications.map((notification) => (

@@ -1,5 +1,4 @@
-// Vercel Serverless Function Entry Point
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -15,13 +14,12 @@ dotenv.config();
 
 const app = express();
 
-// 中间件
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 路由
@@ -34,12 +32,19 @@ app.use('/api/family', familyRoutes);
 app.use('/api/badges', badgesRoutes);
 
 // 健康检查
-app.get('/api', (req, res) => {
-  res.json({ 
-    message: 'Children Points System API',
-    version: '1.0.0',
-    status: 'running'
-  });
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 404
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'NOT_FOUND', message: '请求的资源不存在' });
+});
+
+// 错误处理
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: 'INTERNAL_ERROR', message: '服务器内部错误' });
 });
 
 export default app;

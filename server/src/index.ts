@@ -20,9 +20,6 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// 初始化Socket.io服务器
-const socketServer = new SocketServer(server);
-
 // 中间件
 app.use(helmet());
 app.use(cors({
@@ -33,8 +30,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 静态文件服务
-app.use('/uploads', express.static('uploads'));
+// 静态文件服务（仅本地开发）
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/uploads', express.static('uploads'));
+}
 
 // 路由
 app.use('/api/auth', authRoutes);
@@ -133,10 +132,14 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // 导出Socket服务器实例，供其他模块使用
-export const getSocketServer = () => socketServer;
+// Serverless 环境下返回 null
+let _socketServer: SocketServer | null = null;
+
+export const getSocketServer = (): SocketServer | null => _socketServer;
 
 // 只在非 Serverless 环境下启动服务器
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  _socketServer = new SocketServer(server);
   server.listen(PORT, () => {
     console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
     console.log(`📝 环境: ${process.env.NODE_ENV || 'development'}`);

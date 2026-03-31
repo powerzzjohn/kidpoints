@@ -2,7 +2,14 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
 // Socket.io连接配置
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+// 生产环境（Vercel）不支持 WebSocket，降级为轮询
+const SOCKET_URL = import.meta.env.PROD
+  ? window.location.origin
+  : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001');
+
+const SOCKET_TRANSPORTS: ('polling' | 'websocket')[] = import.meta.env.PROD
+  ? ['polling']
+  : ['websocket', 'polling'];
 
 // Socket连接状态
 export interface SocketConnection {
@@ -151,11 +158,11 @@ class SocketService {
 
   // 设置事件监听器
   private setupEventListeners(): void {
-    // 监听认证状态变化
     useAuthStore.subscribe((state) => {
-      if (state.isAuthenticated && !this.isConnected) {
+      const authenticated = !!state.token;
+      if (authenticated && !this.isConnected) {
         this.connect();
-      } else if (!state.isAuthenticated && this.isConnected) {
+      } else if (!authenticated && this.isConnected) {
         this.disconnect();
       }
     });
@@ -163,6 +170,12 @@ class SocketService {
 
   // 连接Socket
   public connect(): void {
+    // 生产环境（Vercel Serverless）不支持 Socket.io，跳过连接
+    if (import.meta.env.PROD) {
+      console.log('生产环境：Socket.io 不可用，实时通知已禁用');
+      return;
+    }
+
     const token = useAuthStore.getState().token;
     const user = useAuthStore.getState().user;
 
@@ -180,7 +193,7 @@ class SocketService {
 
     this.socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: SOCKET_TRANSPORTS,
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,

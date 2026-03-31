@@ -1,8 +1,8 @@
 {
-  "buildCommand": "npm install --prefix client && npm run build --prefix client",
+  "buildCommand": "npm run build --prefix client && npx prisma generate --schema=server/prisma/schema.prisma",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install --prefix server",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index.ts" }
+    { "source": "/api/:path*", "destination": "/api/index.ts" },
+    { "source": "/:path*", "destination": "/index.html" }
   ]
 }

@@ -54,6 +54,7 @@ class NotificationService {
   static sendPointsChange(familyId: string, data: PointsChangeNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendPointsChange(familyId, {
         ...data,
         event: 'points:changed'
@@ -68,6 +69,7 @@ class NotificationService {
   static sendRedemptionRequested(familyId: string, data: RedemptionNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendRedemptionNotification(familyId, {
         ...data,
         event: 'redemption:requested'
@@ -82,6 +84,7 @@ class NotificationService {
   static sendRedemptionProcessed(familyId: string, data: RedemptionNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendRedemptionProcessed(familyId, {
         ...data,
         event: 'redemption:processed'
@@ -96,6 +99,7 @@ class NotificationService {
   static sendRuleConfirmation(familyId: string, data: RuleConfirmationNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendRuleConfirmation(familyId, {
         ...data,
         event: 'rule:confirmed'
@@ -110,6 +114,7 @@ class NotificationService {
   static sendBadgeEarned(familyId: string, data: BadgeEarnedNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendBadgeEarned(familyId, {
         ...data,
         event: 'badge:earned'
@@ -124,6 +129,7 @@ class NotificationService {
   static sendFamilyPhotoUpdated(familyId: string, data: FamilyPhotoNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendFamilyPhotoUpdated(familyId, {
         ...data,
         event: 'family:photo:updated'
@@ -138,6 +144,7 @@ class NotificationService {
   static sendCustomTextUpdated(familyId: string, data: CustomTextNotification): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.sendCustomTextUpdated(familyId, {
         ...data,
         event: 'custom:text:updated'
@@ -152,6 +159,7 @@ class NotificationService {
   static sendSystemNotification(familyId: string, message: string, data?: any): void {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return;
       socketServer.getIO().to(`family:${familyId}`).emit('system:notification', {
         message,
         data,
@@ -168,8 +176,7 @@ class NotificationService {
   static sendPrivateNotification(userId: string, message: string, data?: any): void {
     try {
       const socketServer = getSocketServer();
-      // 这里需要实现根据用户ID找到对应的socket连接
-      // 暂时先发送到所有连接，由客户端过滤
+      if (!socketServer) return;
       socketServer.getIO().emit('private:notification', {
         userId,
         message,
@@ -187,6 +194,7 @@ class NotificationService {
   static getOnlineUsers(familyId: string): any[] {
     try {
       const socketServer = getSocketServer();
+      if (!socketServer) return [];
       return socketServer.getOnlineUsers(familyId);
     } catch (error) {
       console.error('获取在线用户失败:', error);
